@@ -1,0 +1,16 @@
+{
+  "name": "playapp",
+  "version": "1.0.0",
+  "description": "a backend server for PlayApp",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "javascript",
+    "backend"
+  ],
+  "author": "Shyam Agarwal",
+  "license": "ISC"
+}
