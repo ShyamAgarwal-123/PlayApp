@@ -1,5 +1,14 @@
 import { Router } from "express";
-import { registerUser,loginUser, logOutUser,refreshAccessToken,userPasswordUpdate,getCurrentUser,userAvatarUpdate} from "../controllers/user.controllers.js";
+import { 
+    registerUser,
+    loginUser,
+    logOutUser,
+    refreshAccessToken,
+    userPasswordUpdate,
+    getCurrentUser,
+    userAvatarUpdate,
+    userClickedChannelProfile
+} from "../controllers/user.controllers.js";
 import {upload} from "../middlewares/multer.middlewares.js"
 import { verifyJWT } from "../middlewares/auth.middlewares.js";
 
@@ -36,13 +45,15 @@ userRouter.route("/refresh-token").post(refreshAccessToken)
 userRouter.route("/update-password").post(verifyJWT,userPasswordUpdate)
 
 // route to get current user
-userRouter.route("/get-crt-user").post(verifyJWT,getCurrentUser)
+userRouter.route("/current-user").get(verifyJWT,getCurrentUser)
 
-// route to update
-userRouter.route("/update-avatar").post(verifyJWT,
+// route to update avatar
+userRouter.route("/update-avatar").patch(verifyJWT,
     upload.single("avatar"),
     userAvatarUpdate
-) 
+)
+//route for getting clicked user channel
+userRouter.route("/c/:username").get(verifyJWT,userClickedChannelProfile)
 
 
 export default userRouter;

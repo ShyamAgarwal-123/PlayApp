@@ -268,7 +268,72 @@ const userAvatarUpdate =asyncHandler( async(req,res)=>{
         "New Avatar is updated"
     ))
 })
-
+// controller for getting userClickedChannelProfile
+const userClickedChannelProfile = asyncHandler(async (req,res)=>{
+    const {username} =req.params
+    if(!username){
+        throw ApiError(400,"User is missing")
+    }
+    const channel = await User.aggregate([
+        {
+            $match:{
+                username: username?.toLowerCase()
+            }
+        },
+        {
+            $lookup:{
+                from: "subscriptions",
+                localField: "_id",
+                foreignField:"channel",
+                as: "subscribers"
+            }
+            
+        },
+        {
+            $lookup:{
+                from: "subscriptions",
+                localField: "_id",
+                foreignField:"subscriber",
+                as: "subscribedTo"
+            }
+        },
+        {
+            $addFields:{
+                subscriberCount : {
+                    $size : "$subscribers"
+                },
+                subscribedCount:{
+                    $size : "$subscribedTo"
+                },
+                isSubscribed:{
+                    $cond:{
+                        if:{$in :[req.user?._id,"$subscribers.subscriber"]},
+                        then: true,
+                        else: false
+                    }
+                }
+            }
+        },
+        {
+            $project:{
+                fullname:1,
+                username:1,
+                subscriberCount:1,
+                subscribedCount:1,
+                avatar:1,
+                coverImage:1,
+                isSubscribed:1,
+                email:1
+            }
+        }
+    ])
+    if (!channel?.length) {
+        throw ApiError(400,"channel doesnot exist")
+    }
+    return res
+    .status(200)
+    .json(new ApiResponse(200,channel[0],"Channel is Successfully Fetched"))
+})
 
 export {
     registerUser,
@@ -277,5 +342,6 @@ export {
     refreshAccessToken,
     userPasswordUpdate,
     getCurrentUser,
-    userAvatarUpdate
+    userAvatarUpdate,
+    userClickedChannelProfile
 }
