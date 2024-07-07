@@ -193,9 +193,47 @@ const refreshAccessToken= asyncHandler(async (req,res)=>{
     }
 
 })
+
+
+//controller for password update
+
+const userPasswordUpdate =asyncHandler( async(req,res)=>{
+    const {oldPassword,newPassword} = req.body;
+    if (newPassword === "" || oldPassword ==="") {
+        throw new ApiError(401,"Password is Required")
+    }
+    if (oldPassword === newPassword) {
+        throw new ApiError(401,"New Password is Required") 
+    }
+    const user = await User.findById(req.user?._id)
+    if (!user) {
+        throw new ApiError(404,"User not found")
+    }
+    const isPassword = await user.isPasswordCorrect(oldPassword);
+
+    if (!isPassword) {
+        throw new ApiError(400,"Password is Incorrect")
+    }
+    user.password = newPassword;
+    await user.save({validateBeforeSave: false});
+    return res
+    .status(200)
+    .json(
+        new ApiResponse(
+            200,
+            user.select(
+            "-password -refreshToken"),
+            "Password is Successfully Changed"
+        )
+    )
+
+
+
+})
 export {
     registerUser,
     loginUser,
     logOutUser,
-    refreshAccessToken
+    refreshAccessToken,
+    userPasswordUpdate
 } 
