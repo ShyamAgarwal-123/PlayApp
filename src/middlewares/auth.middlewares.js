@@ -4,7 +4,7 @@ import jwt from "jsonwebtoken";
 import { User } from "../models/user.models.js";
 
 // verify karega ki user sahi user  hain ya nahi hain
-export const verifyJWT = asyncHandler( async (req,res,next)=>{
+export const verifyJWT = asyncHandler( async (req,res,next)=>{ 
      try {
         const token = req.cookies?.accessToken || req.header("Authorization")?.replace("Bearer ","")
         if (!token) {
