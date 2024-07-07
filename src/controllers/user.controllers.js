@@ -221,8 +221,7 @@ const userPasswordUpdate =asyncHandler( async(req,res)=>{
     .json(
         new ApiResponse(
             200,
-            user.select(
-            "-password -refreshToken"),
+            {},
             "Password is Successfully Changed"
         )
     )
