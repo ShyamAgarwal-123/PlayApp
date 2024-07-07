@@ -141,7 +141,7 @@ const loginUser = asyncHandler( async (req,res)=>{
 //controller for logout
 const logOutUser = asyncHandler(async (req,res)=>{
     await User.findByIdAndUpdate(req.user._id,{
-        $set : {refreshToken : ""}// check in future
+        $unset : {refreshToken : 1}// removes the field from the document
     })
     const option = {
         httpOnly: true,
