@@ -28,8 +28,6 @@ const generateRefreshToken = async (userid) =>{
     }
 }
 
-
-
 // controller for register
 const registerUser = asyncHandler( async (req,res)=>{
     //get details of user from the frontend
@@ -196,7 +194,6 @@ const refreshAccessToken= asyncHandler(async (req,res)=>{
 
 
 //controller for password update
-
 const userPasswordUpdate =asyncHandler( async(req,res)=>{
     const {oldPassword,newPassword} = req.body;
     if (newPassword === "" || oldPassword ==="") {
@@ -229,10 +226,52 @@ const userPasswordUpdate =asyncHandler( async(req,res)=>{
 
 
 })
+
+// controller for current user
+const getCurrentUser = asyncHandler(async (req,res)=>{
+    return res
+    .status(200)
+    .json(
+        new ApiResponse(
+            200,
+            req.user,
+            "current user Fetched"
+        )
+    )
+})
+
+// controller to update avatar
+const userAvatarUpdate =asyncHandler( async(req,res)=>{
+    const avatarLocalPath = req.file?.path
+    if (!avatarLocalPath) {
+        throw new ApiError(400,"Avatar file is Required")
+    }
+    const avatar = await uploadOnCloudinary(avatarLocalPath);
+    if (!avatar) {
+        throw new ApiError(400,"Avatar file is Required")
+    }
+    const user = await User.findByIdAndUpdate(req.user?._id,{
+        $set:{
+            avatar : avatar.url
+        }},
+        {new: true}
+    ).select("-password -refreshToken")
+    return res
+    .status(200)
+    .json(new ApiResponse(
+        200,
+        user,
+        "New Avatar is updated"
+    ))
+})
+
+
 export {
     registerUser,
     loginUser,
     logOutUser,
     refreshAccessToken,
-    userPasswordUpdate
-} 
+    userPasswordUpdate,
+    getCurrentUser,
+    userAvatarUpdate
+}
