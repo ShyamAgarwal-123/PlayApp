@@ -5,19 +5,29 @@ import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import jwt from "jsonwebtoken";
 
-// function for Access and Refresh Token generator
-const generateAccessAndRefreshToken = async (userid) =>{
+// functions for Access and Refresh Token generator
+const generateAccessToken = async (userid) =>{
     try {
         const user = await User.findById(userid);
         const accessToken = user.generateAccessToken();
+        return { accessToken }
+    } catch (error) {
+        throw new ApiError(500,"Something went Wrong while creating Access Token")
+    }
+}
+
+const generateRefreshToken = async (userid) =>{
+    try {
+        const user = await User.findById(userid);
         const refreshToken = user.generateRefreshToken();
         user.refreshToken = refreshToken;
         await user.save({validateBeforeSave: false})
-        return { accessToken, refreshToken }
+        return { refreshToken }
     } catch (error) {
-        throw new ApiError(500,"Something went Wrong while creating Access and Refresh Token")
+        throw new ApiError(500,"Something went Wrong while creating Refresh Token")
     }
 }
+
 
 
 // controller for register
@@ -82,7 +92,7 @@ const registerUser = asyncHandler( async (req,res)=>{
 })
 
 // controller for login
-const loginUser = asyncHandler( async (req,res)=>{
+const loginUser = asyncHandler( async (req,res)=>{ 
     //take login credentials from the user(password & (email,username))
     const {email,password} = req.body
     //check all fileds are their 
@@ -91,7 +101,6 @@ const loginUser = asyncHandler( async (req,res)=>{
     }
     //validate the user from data base
     const foundedUser = await User.findOne({email : email})
-    console.log(foundedUser)
     if(!foundedUser){
         throw new ApiError(404,"User not found")
     }
@@ -101,7 +110,8 @@ const loginUser = asyncHandler( async (req,res)=>{
         throw new ApiError(401,"Password is incorrect")
     }
     //acceskey and refresh key 
-    const {accessToken,refreshToken} = await generateAccessAndRefreshToken(foundedUser._id)
+    const {accessToken} = await generateAccessToken(foundedUser._id)
+    const {refreshToken} = await generateRefreshToken(foundedUser._id)
     // login user
     const loginUser = await User.findById(foundedUser._id).select(
         "-password -refreshToken"
@@ -132,7 +142,7 @@ const loginUser = asyncHandler( async (req,res)=>{
 //controller for logout
 const logOutUser = asyncHandler(async (req,res)=>{
     await User.findByIdAndUpdate(req.user._id,{
-        $set : {refreshToken : undefined}
+        $set : {refreshToken : ""}// check in future
     })
     const option = {
         httpOnly: true,
@@ -150,7 +160,7 @@ const logOutUser = asyncHandler(async (req,res)=>{
 
 //controller for refresh AccessToken
 const refreshAccessToken= asyncHandler(async (req,res)=>{
-    const incomingRefreshToken = req.cookie.refreshAccessToken || req.body.refreshToken
+    const incomingRefreshToken = req.cookies.refreshToken || req.body.refreshToken
     if (!incomingRefreshToken) {
         throw new ApiError(400,"Unauthorized Request")
     }
@@ -163,7 +173,7 @@ const refreshAccessToken= asyncHandler(async (req,res)=>{
         if (incomingRefreshToken !== foundedUser?.refreshToken) {
             throw new ApiError(400,"Reresh Token is Expired")
         }
-        const {accessToken,newRefreshToken} = await generateAccessAndRefreshToken(foundedUser._id)
+        const {accessToken} = await generateAccessToken(foundedUser._id)
         const option = {
             httpOnly: true,
             secure: true
@@ -171,11 +181,12 @@ const refreshAccessToken= asyncHandler(async (req,res)=>{
         return res
         .status(200)
         .cookie("accessToken",accessToken,option)
-        .cookie("refreshToken",newRefreshToken,option)
         .json(
-            200,
-            {accessToken, refreshToken: newRefreshToken},
+            new ApiResponse(
+                200,
+            {accessToken},
             "Access Token is Successfully Refreshed"
+            )
         )
     } catch (error) {
         throw new ApiError(401,error?.message || "Invalid Refresh Token")
