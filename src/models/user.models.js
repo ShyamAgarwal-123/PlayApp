@@ -28,6 +28,10 @@ const userSchema = new mongoose.Schema({
         type: String, // cloudinary url
         required:true,
     },
+    avatar_id:{
+        type: String, // cloudinary url
+        required:true,
+    },
     coverImage: {
         type: String, // cloudinary url
     },

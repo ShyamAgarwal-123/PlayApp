@@ -1,7 +1,7 @@
 import {asyncHandler} from "../utils/asyncHandler.js";
 import {ApiError} from "../utils/ApiErrors.js";
 import {User} from "../models/user.models.js";
-import { uploadOnCloudinary } from "../utils/cloudinary.js";
+import { uploadOnCloudinary,deleteFromCloudinary } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import jwt from "jsonwebtoken";
 
@@ -69,6 +69,7 @@ const registerUser = asyncHandler( async (req,res)=>{
     const user = await User.create({
         fullname,
         avatar: avatar.url,
+        avatar_id: avatar.public_id,
         coverImage : coverImage?.url || "",
         email,
         password,
@@ -242,6 +243,7 @@ const getCurrentUser = asyncHandler(async (req,res)=>{
 
 // controller to update avatar
 const userAvatarUpdate =asyncHandler( async(req,res)=>{
+    const oldAvatarFile = req.user?.avatar_id;
     const avatarLocalPath = req.file?.path
     if (!avatarLocalPath) {
         throw new ApiError(400,"Avatar file is Required")
@@ -252,10 +254,12 @@ const userAvatarUpdate =asyncHandler( async(req,res)=>{
     }
     const user = await User.findByIdAndUpdate(req.user?._id,{
         $set:{
-            avatar : avatar.url
+            avatar : avatar.url,
+            avatar_id : avatar.public_id
         }},
         {new: true}
     ).select("-password -refreshToken")
+    await deleteFromCloudinary(oldAvatarFile);
     return res
     .status(200)
     .json(new ApiResponse(
